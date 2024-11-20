@@ -10,9 +10,9 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @Table(name = "image_json_string")
 @Getter
 @Setter
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class ImageJsonString {
 
     @Id

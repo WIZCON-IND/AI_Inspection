@@ -1,8 +1,5 @@
 package com.AI_Inspection.AI_Inspection.service;
 
-import com.AI_Inspection.AI_Inspection.entity.AiPostBody;
-import com.AI_Inspection.AI_Inspection.entity.ChatRequest;
-import com.AI_Inspection.AI_Inspection.entity.ChatResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.apache.tomcat.util.http.fileupload.FileItem;
@@ -26,7 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @Service
-@AllArgsConstructor
+//@AllArgsConstructor
 public class AudioService {
 
     private static final String RESOURCE_FOLDER = "src/main/resources/uploads/";
@@ -34,6 +31,7 @@ public class AudioService {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
 
 //    private static final String API_KEY = "";
+
 
     public String openAISendRequest(MultipartFile file) {
         RestTemplate restTemplate = new RestTemplate();

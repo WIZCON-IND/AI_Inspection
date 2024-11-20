@@ -5,8 +5,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 
-@SpringBootApplication(exclude={DataSourceAutoConfiguration.class})
-@EnableAutoConfiguration
+@SpringBootApplication
 public class AiInspectionApplication {
 
 	public static void main(String[] args) {
