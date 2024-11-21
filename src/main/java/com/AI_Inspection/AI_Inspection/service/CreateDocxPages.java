@@ -5,16 +5,35 @@ import org.docx4j.jaxb.Context;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.BinaryPartAbstractImage;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
+import org.docx4j.org.apache.xpath.operations.Bool;
 import org.docx4j.wml.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class CreateDocxPages {
+
+
+    @Autowired
+    private  FinalImageJson finalImageJson;
+
+    @Autowired
+    private CovePageService covePageService;
+
+    @Autowired AudioService audioService;
+
+    @Autowired
+    private StringToJsonService stringToJsonService;
+
     private int captionNumber = 1;
 
     public File createdocx() {
@@ -26,33 +45,49 @@ public class CreateDocxPages {
             // Get the main document part
             MainDocumentPart mainDocumentPart = wordMLPackage.getMainDocumentPart();
 
-            // Add content for Page 1
-//            addPageContent(mainDocumentPart, "Page 1 Content...");
-            // Add images for Page 1
-//            addImage(wordMLPackage, "src/main/resources/static/coverPage.png");
-//
-//            // Add a page break
-//            mainDocumentPart.addObject(createPageBreak());
+            mainDocumentPart.addObject(covePageService.createCustomTable(wordMLPackage));
 
-            // Add content for Page 11
-//            addPageContent(mainDocumentPart, "Page 11 Content...");
+            mainDocumentPart.addObject(createPageBreak());
 
-            Tbl table = createTableWithImages(wordMLPackage);
-            mainDocumentPart.addObject(table);
-            Tbl captiontable = createTableWithCenteredText(captionNumber, captionNumber+1);
-            mainDocumentPart.addObject(captiontable);
+            String audioString = audioService.openAISendRequest();
+            List<String> stringList = stringToJsonService.audioString(audioString);
+            System.out.println(stringList);
 
-            P emptyParagraph = Context.getWmlObjectFactory().createP();
-            mainDocumentPart.addObject(emptyParagraph);
+            Map<String, List<String>> categoryImages = finalImageJson.imageJson();
+//            Map<String, List<String>> categoryImages = new HashMap<>();
+//            categoryImages.put("SUMIDEROS", Arrays.asList("IMG_4376.jpeg", "IMG_4387.jpeg", "20240219_092647 (1).jpg", "IMG_4094.JPEG"));
 
-            Tbl table2 = createTableWithImages(wordMLPackage);
-            mainDocumentPart.addObject(table2);
-            Tbl captiontable2 = createTableWithCenteredText(captionNumber+2, captionNumber+3);
-            mainDocumentPart.addObject(captiontable2);
-            captionNumber = captionNumber+4;
+            for(Map.Entry<String, List<String>> entry : categoryImages.entrySet()) {
 
-            // Add images for Page 11
-//            addImage(wordMLPackage, "src/main/resources/static/logo.png");
+                mainDocumentPart.addObject(createHeading("4\tINSPECCIÓN DE LA CUBIERTA", "Heading1"));
+                mainDocumentPart.addObject(createHeading("En la inspección realizada, se verifican diferentes aspectos de la cubierta según la siguiente relación:  ", "Normal"));
+                P paragraph = createHeading("1.1 " + entry.getKey(), "Heading2");
+                mainDocumentPart.addObject(paragraph);
+
+                Tbl descriptionTable = create1x1TableWithBorder(stringList.get(0));
+                mainDocumentPart.addObject(descriptionTable);
+
+                P emptyParagraph = Context.getWmlObjectFactory().createP();
+                mainDocumentPart.addObject(emptyParagraph);
+
+                Tbl table = createTableWithImages(wordMLPackage, entry.getValue().get(0), entry.getValue().get(1));
+                mainDocumentPart.addObject(table);
+                Tbl captiontable = createTableWithCenteredText(captionNumber, captionNumber + 1);
+                mainDocumentPart.addObject(captiontable);
+
+                mainDocumentPart.addObject(emptyParagraph);
+
+                Tbl table2 = createTableWithImages(wordMLPackage, entry.getValue().get(2), entry.getValue().get(3));
+                mainDocumentPart.addObject(table2);
+                Tbl captiontable2 = createTableWithCenteredText(captionNumber + 2, captionNumber + 3);
+                mainDocumentPart.addObject(captiontable2);
+                captionNumber = captionNumber + 4;
+
+                mainDocumentPart.addObject(emptyParagraph);
+
+                Tbl recommendationTable = create1x1TableWithBorder(stringList.get(1));
+                mainDocumentPart.addObject(recommendationTable);
+            }
 
             tempFile = File.createTempFile("GeneratedDocument", ".docx");
             wordMLPackage.save(tempFile);
@@ -63,67 +98,84 @@ public class CreateDocxPages {
         return tempFile;
     }
 
-    private static void addPageContent(MainDocumentPart mainDocumentPart, String content) {
-        ObjectFactory factory = new ObjectFactory();
-        P paragraph = factory.createP();
-        R run = factory.createR();
-        Text text = factory.createText();
-        text.setValue(content);
+    private P createPageBreak() {
+        P pageBreakParagraph = Context.getWmlObjectFactory().createP();
+        R run = Context.getWmlObjectFactory().createR();
+        Br breakObj = Context.getWmlObjectFactory().createBr();
+        breakObj.setType(STBrType.PAGE); // Set break type to page
+        run.getContent().add(breakObj);
+        pageBreakParagraph.getContent().add(run);
+        return pageBreakParagraph;
+    }
+
+    // Function to create a heading
+    public static P createHeading(String headingText, String style) {
+        P heading = Context.getWmlObjectFactory().createP();
+
+        // Add the text to the paragraph
+        R run = Context.getWmlObjectFactory().createR();
+        Text text = Context.getWmlObjectFactory().createText();
+        text.setValue(headingText);
         run.getContent().add(text);
-        paragraph.getContent().add(run);
-        mainDocumentPart.addObject(paragraph);
+        heading.getContent().add(run);
+
+        // Set the heading style
+        PPr paragraphProperties = Context.getWmlObjectFactory().createPPr();
+        PPrBase.PStyle headingStyle = Context.getWmlObjectFactory().createPPrBasePStyle();
+        headingStyle.setVal(style); // Use the "Heading1" style
+        paragraphProperties.setPStyle(headingStyle);
+        heading.setPPr(paragraphProperties);
+
+        return heading;
     }
 
-    private static P createPageBreak() {
-        ObjectFactory factory = new ObjectFactory();
-        P paragraph = factory.createP();
-        R run = factory.createR();
-        paragraph.getContent().add(run);
-        run.getContent().add(factory.createBr());
-        return paragraph;
-    }
-
-    private static void addImage(WordprocessingMLPackage wordMLPackage, String imagePath) throws Exception {
-        // Assuming imagePath contains the path to the image file
-        File file = new File(imagePath);
-        byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
-
-        org.docx4j.openpackaging.parts.WordprocessingML.BinaryPartAbstractImage imagePart =
-                org.docx4j.openpackaging.parts.WordprocessingML.BinaryPartAbstractImage.createImagePart(wordMLPackage, bytes);
-
-        int id1 = 1;
-        int id2 = 2;
-        org.docx4j.dml.wordprocessingDrawing.Inline inline = imagePart.createImageInline("Filename hint", "Alternative text", id1, id2, false);
-
-        ObjectFactory factory = new ObjectFactory();
-        P paragraph = factory.createP();
-        org.docx4j.wml.Drawing drawing = factory.createDrawing();
-        drawing.getAnchorOrInline().add(inline);
-        R run = factory.createR();
-        run.getContent().add(drawing);
-        paragraph.getContent().add(run);
-
-        wordMLPackage.getMainDocumentPart().addObject(paragraph);
-    }
-
-    public static Tbl createTableWithImages(WordprocessingMLPackage wordMLPackage) throws Exception {
+    // Function to create a 1x1 table with a border and text
+    public static Tbl create1x1TableWithBorder(String cellText) {
         // Create the table
         Tbl table = Context.getWmlObjectFactory().createTbl();
+        setTableBorders(table, true);
+
+        // Create a row
+        Tr row = Context.getWmlObjectFactory().createTr();
+
+        // Create a cell with text
+        Tc cell = Context.getWmlObjectFactory().createTc();
+        P paragraph = Context.getWmlObjectFactory().createP();
+        R run = Context.getWmlObjectFactory().createR();
+        Text text = Context.getWmlObjectFactory().createText();
+        text.setValue(cellText);
+        run.getContent().add(text);
+        paragraph.getContent().add(run);
+        cell.getContent().add(paragraph);
+
+        // Add the cell to the row
+        row.getContent().add(cell);
+
+        // Add the row to the table
+        table.getContent().add(row);
+
+        return table;
+    }
+
+    public static Tbl createTableWithImages(WordprocessingMLPackage wordMLPackage, String image1, String image2) throws Exception {
+        // Create the table
+        Tbl table = Context.getWmlObjectFactory().createTbl();
+        String imageFolder = "src/main/resources/uploads/images/";
 
         // Add the table row
         Tr row = Context.getWmlObjectFactory().createTr();
         table.getContent().add(row);
 
         // Add first cell with image
-        Tc cell1 = createImageCell(wordMLPackage, "src/main/resources/static/coverPage.png");
+        Tc cell1 = createImageCell(wordMLPackage, imageFolder+image1);
         row.getContent().add(cell1);
 
         // Add second cell with image
-        Tc cell2 = createImageCell(wordMLPackage,"src/main/resources/static/coverPage.png");
+        Tc cell2 = createImageCell(wordMLPackage,imageFolder+image2);
         row.getContent().add(cell2);
 
         // Set table borders
-        setTableBorders(table);
+        setTableBorders(table, true);
 
         return table;
     }
@@ -134,14 +186,14 @@ public class CreateDocxPages {
         Tc cell = Context.getWmlObjectFactory().createTc();
 
         // Add the image to the cell
-        P p = createImageParagraph(wordMLPackage, imagePath);
+        P p = createImageParagraph(wordMLPackage, imagePath, 2772000, 2088000);
         cell.getContent().add(p);
 
         return cell;
     }
 
     // Method to create a paragraph with an image
-    public static P createImageParagraph(WordprocessingMLPackage wordMLPackage, String imagePath) throws Exception {
+    public static P createImageParagraph(WordprocessingMLPackage wordMLPackage, String imagePath, int width, int height) throws Exception {
         P paragraph = Context.getWmlObjectFactory().createP();
 
         // Load the image as a BinaryPartAbstractImage
@@ -149,7 +201,7 @@ public class CreateDocxPages {
         BinaryPartAbstractImage imagePart = BinaryPartAbstractImage.createImagePart(wordMLPackage, imageBytes);
 
         // Image inline
-        Inline inline = imagePart.createImageInline(null, null, 0, 1, 2772000,2088000, false);
+        Inline inline = imagePart.createImageInline(null, null, 0, 1, width,height, false);
 
         // Add the image to the paragraph
         R run = Context.getWmlObjectFactory().createR();
@@ -164,7 +216,7 @@ public class CreateDocxPages {
     }
 
     // Set borders for the table
-    public static void setTableBorders(Tbl table) {
+    public static void setTableBorders(Tbl table, boolean width_table) {
         TblBorders tblBorders = Context.getWmlObjectFactory().createTblBorders();
 
         table.setTblPr(new TblPr());
@@ -182,6 +234,13 @@ public class CreateDocxPages {
         tblBorders.setInsideV(border);
 
         table.getTblPr().setTblBorders(tblBorders);
+
+        if(width_table){
+            TblWidth tblWidth = Context.getWmlObjectFactory().createTblWidth();
+            tblWidth.setW(BigInteger.valueOf(10000)); // Full width (twips: 1/20 of a point)
+            tblWidth.setType("dxa");
+            table.getTblPr().setTblW(tblWidth);
+        }
     }
 
 

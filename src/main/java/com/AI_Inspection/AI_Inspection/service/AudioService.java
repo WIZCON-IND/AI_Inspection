@@ -1,5 +1,8 @@
 package com.AI_Inspection.AI_Inspection.service;
 
+import com.AI_Inspection.AI_Inspection.entity.AiPostBody;
+import com.AI_Inspection.AI_Inspection.entity.ChatRequest;
+import com.AI_Inspection.AI_Inspection.entity.ChatResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.apache.tomcat.util.http.fileupload.FileItem;
@@ -28,14 +31,16 @@ public class AudioService {
 
     private static final String RESOURCE_FOLDER = "src/main/resources/uploads/";
 
-    private static final String API_URL = "https://api.openai.com/v1/chat/completions";
+    private static final String API_URL_CHAT = "https://api.openai.com/v1/chat/completions";
 
-//    private static final String API_KEY = "";
+    private static final String API_URL = "https://api.openai.com/v1/audio/transcriptions";
 
+//    private static final String API_KEY ="";
 
-    public String openAISendRequest(MultipartFile file) {
+    public String openAISendRequest() {
         RestTemplate restTemplate = new RestTemplate();
-        String finalTranscriptions = "";
+        StringBuilder finalTranscriptions = new StringBuilder();
+        String result = "";
 
         try {
             // Load all audio files from the resources folder
@@ -46,34 +51,33 @@ public class AudioService {
 
 
                 for (File audioFile : audioFiles) {
-                    String transcription = transcribeAudio(restTemplate, file);
-                    finalTranscriptions =  transcription + " " + finalTranscriptions;
+                    String transcription = transcribeAudio(restTemplate, audioFile);
+                    finalTranscriptions.append(" \n").append(transcription);
                 }
+                result = summaryChat(String.valueOf(finalTranscriptions));
             } else {
-                System.out.println("No audio files found in the folder.");
+                return "No audio files found in the folder.";
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return finalTranscriptions;
+        return result;
     }
 
-    private static String transcribeAudio(RestTemplate restTemplate, MultipartFile audioFile) {
+    private static String transcribeAudio(RestTemplate restTemplate, File audioFile) {
         try {
             // Prepare headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             headers.setBearerAuth(API_KEY);
 
-            // Prepare the file as a resource
-//            FileSystemResource fileResource = new FileSystemResource(audioFile);
-            File file = new File("/path/to/file");
 
+            FileSystemResource fileResource = new FileSystemResource(audioFile);
 
             // Prepare the body
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", "src/main/resources/uploads/audio/prueba_cliente.mp3");
+            body.add("file", fileResource);
             body.add("model", "whisper-1");
 
             // Create the request entity
@@ -94,5 +98,30 @@ public class AudioService {
             e.printStackTrace();
         }
         return "Transcription failed";
+    }
+
+
+    private String summaryChat( String transcribedText) {
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + API_KEY);
+
+        ChatRequest chatRequest = new ChatRequest();
+        String apiContent = "Eres un experto analista de textos. Los anexos contienen un resumen del estado y recomendaciones de los desagües de tejado de una nave industrial concreta. Por favor actúa como inspector técnico de techos de naves industriales y en base a estos audios escribe en formato json, uno para el estado actual y otro con recomendaciones. Es indispensable que utilice referencias y haga mención de los siguientes códigos o normas: CTE DB-HS-1 Sección 6. Mantenimiento y Conservación 2006 NTE QTG 1976 Revestimientos de techos galvanizados, Recomendaciones generales del Sindicato de Perfiladores 1991. Proporcione el resultado en formato json como se muestra a continuación y solo proporcione la parte json:\n" +
+                "{\n" +
+                "    \"estado\": \"texto de estado\",\n" +
+                "    \"recomendacion\": \"texto de recomendación\"\n" +
+                "}";
+
+
+        ChatResponse response = new ChatResponse();
+        chatRequest.addMessages("system", apiContent);
+        chatRequest.addMessages("user", transcribedText);
+        HttpEntity<ChatRequest> entity = new HttpEntity<ChatRequest>(chatRequest, headers);
+        response = restTemplate.postForObject(API_URL_CHAT, entity, ChatResponse.class);
+
+        return response.getChoices().get(0).getMessage().getContent();
     }
 }

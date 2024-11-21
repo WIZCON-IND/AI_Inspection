@@ -26,7 +26,7 @@ public class AudioController {
     @PostMapping("/demo")
     public ResponseEntity<String> getInstructionsFromSyntax(@RequestBody MultipartFile file) {
 
-        String response =  audioService.openAISendRequest(file);
+        String response =  audioService.openAISendRequest();
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

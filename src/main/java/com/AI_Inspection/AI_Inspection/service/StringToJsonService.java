@@ -45,17 +45,43 @@ public class StringToJsonService {
         // Iterate over all categories
         rootNode.fieldNames().forEachRemaining(categoryName -> {
 
-            List<String> images = new ArrayList<String>();
+            if(categoryName.equalsIgnoreCase("SUMIDEROS")){
+                List<String> images = new ArrayList<String>();
 
-            // Extract image names for this category
-            JsonNode categoryArray = rootNode.get(categoryName);
-            for (JsonNode item : categoryArray) {
-                String imageName = item.get("Image Name").asText();
-                images.add(imageName);
+                // Extract image names for this category
+                JsonNode categoryArray = rootNode.get(categoryName);
+                for (JsonNode item : categoryArray) {
+                    String imageName = item.get("Image Name").asText();
+                    images.add(imageName);
+                }
+                categoryImages.put(categoryName, images);
             }
-            categoryImages.put(categoryName, images );
         });
 
         return categoryImages;
+    }
+
+    public  List<String> audioString(String jsonString) throws JsonProcessingException {
+
+        List<String> result = new ArrayList<>();
+        try {
+            jsonString = jsonString.replaceFirst("^```json\\s*", "");
+            // Create an ObjectMapper instance
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            // Parse the JSON string into a JsonNode
+            JsonNode rootNode = objectMapper.readTree(jsonString);
+
+            // Extract fields
+            String descripcion = rootNode.get("estado").asText();
+            String recomendacion = rootNode.get("recomendacion").asText();
+
+            result.add(descripcion);
+            result.add(recomendacion);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 }

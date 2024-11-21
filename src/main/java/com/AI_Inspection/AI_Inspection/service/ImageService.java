@@ -24,7 +24,7 @@ public class ImageService {
 
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
 
-//    private static final String API_KEY = "";
+//    private static final String API_KEY ="";
 
     @Autowired
     private ImageJsonStringRepo imageJsonStringRepo;
@@ -33,7 +33,7 @@ public class ImageService {
     private StringToJsonService stringToJsonService;
 
 
-    public  void imageJson() throws IOException, InterruptedException {
+    public  String imageJson() throws IOException, InterruptedException {
         // Construct the JSON request body
 
 
@@ -66,7 +66,7 @@ public class ImageService {
                     "VENTILACIÓN / CLIMATIZACIÓN\n" +
                     "OTRAS INSTALACIONES\n" +
                     "BANCADAS\n" +
-                    "I need you to analyze my image and assign a weightage from 0-100 based on the condition of each of the above categories. " +
+                    "I need you to analyze my image and assign a weightage from 0-100 based on the above categories which matches the image and assign weightage to all categories. " +
                     "Additionally, I want the output in json format and only the json and with the fields: \"Image Name : " + entry.getKey()  + "(Keep the image Name " +
                     "in the main object instead of repeating it), \"Category\", \"Weightage\", and \"Description\". I want the json structure as below\n" +
                     "{\n" +
@@ -123,11 +123,14 @@ public class ImageService {
             if (response.statusCode() == HttpStatus.OK.value()) {
                 saveImageJsonToRepo(response.body(), entry.getKey());
                 System.out.println(response);
+
             } else {
                 System.out.println("Error: " + response.statusCode() + " - " + response.body());
+                return "Error: " + response.body();
             }
 
         }
+        return "Sucessfully got response";
     }
 
     private void saveImageJsonToRepo(String json, String imagename){
@@ -137,7 +140,7 @@ public class ImageService {
 
     public static Map<String, String> encodeImageToBase64() throws IOException {
         File resourceFolder = new File("src/main/resources/uploads/images");
-        File[] imageFiles = resourceFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".jpeg"));
+        File[] imageFiles = resourceFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".jpeg") || name.toLowerCase().endsWith(".jpg"));
 
         Map<String, String> imageURLs = new HashMap<>();
 

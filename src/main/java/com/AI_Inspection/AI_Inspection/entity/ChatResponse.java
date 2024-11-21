@@ -12,18 +12,16 @@ import java.util.List;
 @NoArgsConstructor
 public class ChatResponse {
 
-    private String text;
-
-//    @JsonProperty("id")
-//    private String id;
-//    @JsonProperty("object")
-//    private String object;
-//    @JsonProperty("created")
-//    private int created;
-//    @JsonProperty("model")
-//    private String model;
-//    @JsonProperty("choices")
-//    private List<ChatChoiceResponse> choices;
+    @JsonProperty("id")
+    private String id;
+    @JsonProperty("object")
+    private String object;
+    @JsonProperty("created")
+    private int created;
+    @JsonProperty("model")
+    private String model;
+    @JsonProperty("choices")
+    private List<ChatChoiceResponse> choices;
 
 
 }

@@ -1,6 +1,8 @@
 package com.AI_Inspection.AI_Inspection.controller;
 
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,8 +24,8 @@ public class FileUpload {
 
 
     @PostMapping("/upload")
-    public String uploadFile(@RequestBody MultipartFile[] images,
-                             @RequestBody MultipartFile[] audio) {
+    public ResponseEntity<String> uploadFile(@RequestBody MultipartFile[] images,
+                                            @RequestBody MultipartFile[] audio) {
         // Ensure the uploads directory exists
         File uploadDir = new File(RESOURCE_FOLDER+"audio/");
         if (!uploadDir.exists()) {
@@ -49,8 +51,8 @@ public class FileUpload {
 
         } catch (IOException e) {
             e.printStackTrace();
-            return "Failed to upload file: " + e.getMessage();
+            return new ResponseEntity<>("Failed to upload file: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return  "File uploaded successfully";
+        return  new ResponseEntity<>("File uploaded successfully", HttpStatus.OK);
     }
 }

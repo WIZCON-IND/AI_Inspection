@@ -16,6 +16,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,14 +24,14 @@ public class FinalImageJson {
 
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
 
-//    private static final String API_KEY = "";
+//    private static final String API_KEY ="";
 
     @Autowired
     private ImageJsonStringRepo imageJsonStringRepo;
     @Autowired
     private StringToJsonService stringToJsonService;
 
-    public void imageJson() throws IOException, InterruptedException {
+    public Map<String, List<String>> imageJson() throws IOException, InterruptedException {
 
         List<ImageJsonString> imageJson = imageJsonStringRepo.findAll();
 
@@ -41,8 +42,8 @@ public class FinalImageJson {
         JSONObject contentText = new JSONObject();
         contentText.put("type", "text");
         contentText.put("text",concatenatedJson+  "\nTake the above JSONs and create a single JSON containing all the categories, where each category includes " +
-                "4 images with the highest weightage, along with their image name and description.Only give the output starting from \"{\", don't write anything " +
-                "else before the json structure. The json will be in the below format: \n" +
+                "the top 4 images with the highest weightage for that category, along with their image name and description. Only give the json part" +
+                "The json will be in the below format: \n" +
                 "{\n" +
                 "  \"CATEGORY_NAME\": [\n" +
                 "    {\n" +
@@ -90,7 +91,9 @@ public class FinalImageJson {
             System.out.println("Error: " + response.statusCode() + " - " + response.body());
         }
 
-        System.out.println(stringToJsonService.extractCategoryImages(response.body()));
+        Map<String, List<String>> result = stringToJsonService.extractCategoryImages(response.body());
+        System.out.println(result);
+        return result;
     }
 
 }
