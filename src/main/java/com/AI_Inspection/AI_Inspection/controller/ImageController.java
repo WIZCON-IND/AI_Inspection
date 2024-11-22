@@ -1,5 +1,6 @@
 package com.AI_Inspection.AI_Inspection.controller;
 
+import com.AI_Inspection.AI_Inspection.entity.Message;
 import com.AI_Inspection.AI_Inspection.service.FinalImageJson;
 import com.AI_Inspection.AI_Inspection.service.ImageService;
 import lombok.AllArgsConstructor;
@@ -26,9 +27,16 @@ public class ImageController {
     private FinalImageJson finalImageJson;
 
     @GetMapping("/demo")
-    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile[] files) throws IOException, InterruptedException {
+    public ResponseEntity<Message> uploadFile(@RequestParam("file") MultipartFile[] files) throws IOException, InterruptedException {
 
-        return new ResponseEntity<>(imageService.imageJson(), HttpStatus.OK);
+        boolean status = imageService.imageJson();
+        Message msg;
+        if(status)
+            msg = Message.builder().status(status).message("Successfully got response").build();
+        else
+            msg = Message.builder().status(status).message("Failed to got response").build();
+
+        return new ResponseEntity<>(msg, HttpStatus.OK);
     }
 
     @GetMapping("/final-json")

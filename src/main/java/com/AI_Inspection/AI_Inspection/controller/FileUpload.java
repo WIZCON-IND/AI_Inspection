@@ -1,6 +1,10 @@
 package com.AI_Inspection.AI_Inspection.controller;
 
+import com.AI_Inspection.AI_Inspection.entity.DocumentDetails;
+import com.AI_Inspection.AI_Inspection.entity.Message;
+import com.AI_Inspection.AI_Inspection.repo.DocumentDetailsRepo;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -22,10 +26,15 @@ public class FileUpload {
 
     private static final String RESOURCE_FOLDER = "src/main/resources/uploads/";
 
+    @Autowired
+    private DocumentDetailsRepo documentDetailsRepo;
+
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(@RequestBody MultipartFile[] images,
-                                            @RequestBody MultipartFile[] audio) {
+    public ResponseEntity<Message> uploadFile(@RequestParam("images") MultipartFile[] images,
+                                              @RequestParam("audio") MultipartFile[] audio,
+                                              @RequestParam("documentName") String documentName,
+                                              @RequestParam("address") String address) {
         // Ensure the uploads directory exists
         File uploadDir = new File(RESOURCE_FOLDER+"audio/");
         if (!uploadDir.exists()) {
@@ -49,10 +58,16 @@ public class FileUpload {
                 Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
             }
 
+            documentDetailsRepo.save(DocumentDetails.builder().documentName(documentName).Address(address).build());
+
         } catch (IOException e) {
             e.printStackTrace();
-            return new ResponseEntity<>("Failed to upload file: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            Message msg = Message.builder().message("Failed to upload file").status(Boolean.FALSE).build();
+            return new ResponseEntity<>(msg, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return  new ResponseEntity<>("File uploaded successfully", HttpStatus.OK);
+
+
+        Message msg = Message.builder().message("File uploaded successfully").status(Boolean.TRUE).build();
+        return  new ResponseEntity<>(msg, HttpStatus.OK);
     }
 }

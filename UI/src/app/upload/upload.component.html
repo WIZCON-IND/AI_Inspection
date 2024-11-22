@@ -1,0 +1,83 @@
+<div class="container py-4">
+  <form (ngSubmit)="onSubmit()" [formGroup]="uploadForm" enctype="multipart/form-data">
+    <div class="row">
+      <!-- Document Name Field -->
+      <div class="col-md-6 mb-3">
+        <label for="documentName" class="form-label">Document Name</label>
+        <input
+          type="text"
+          id="documentName"
+          class="form-control"
+          formControlName="documentName"
+          placeholder="Enter document name"
+        />
+        <div *ngIf="uploadForm.get('documentName')?.invalid && uploadForm.get('documentName')?.touched" class="text-danger">
+          Document Name is required.
+        </div>
+      </div>
+
+      <!-- Address Field -->
+      <div class="col-md-6 mb-3">
+        <label for="address" class="form-label">Address</label>
+        <input
+          type="text"
+          id="address"
+          class="form-control"
+          formControlName="address"
+          placeholder="Enter address"
+        />
+        <div *ngIf="uploadForm.get('address')?.invalid && uploadForm.get('address')?.touched" class="text-danger">
+          Address is required.
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Left Section: Audio Upload -->
+      <div class="col-md-6">
+        <div class="card p-3 shadow-sm">
+          <h4>Upload Audio</h4>
+          <input
+            type="file"
+            class="form-control my-3"
+            (change)="onAudioUpload($event)"
+            accept="audio/*"
+            multiple
+          />
+          <ul class="list-unstyled">
+            <li *ngFor="let audio of audioFiles" class="mb-2">
+              <audio [src]="audio.url" controls class="w-100"></audio>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Right Section: Image Upload -->
+      <div class="col-md-6">
+        <div class="card p-3 shadow-sm">
+          <h4>Upload Images</h4>
+          <input
+            type="file"
+            class="form-control my-3"
+            (change)="onImageUpload($event)"
+            accept="image/*"
+            multiple
+          />
+          <div class="d-flex flex-wrap gap-3">
+            <img
+              *ngFor="let img of imageFiles"
+              [src]="img.url"
+              alt="Image preview"
+              class="img-thumbnail"
+              style="width: 100px; height: 100px; object-fit: cover;"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-4">
+      <button type="submit" class="btn btn-primary w-25" [disabled]="!isFormValid()">Submit</button>
+    </div>
+  </form>
+</div>

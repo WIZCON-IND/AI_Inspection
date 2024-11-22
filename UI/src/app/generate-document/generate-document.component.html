@@ -1,0 +1,9 @@
+<div class="text-center">
+  <h1>Click the button to Generate the Document</h1>
+  <p>(This will take some time, please wait for few mins after clicking the buttons)</p>
+  <div class="text-center mt-4">
+    <button (click)="createDoc()" class="btn btn-primary w-25 m-5">Create</button>
+    <button (click)="downloadDoc()" class="btn btn-primary w-25 m-5" [disabled]=!validDownloadButton>Download</button>
+  </div>
+</div>
+

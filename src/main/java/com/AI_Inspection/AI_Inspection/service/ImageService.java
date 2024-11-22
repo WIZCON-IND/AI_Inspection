@@ -33,7 +33,7 @@ public class ImageService {
     private StringToJsonService stringToJsonService;
 
 
-    public  String imageJson() throws IOException, InterruptedException {
+    public  boolean imageJson() throws IOException, InterruptedException {
         // Construct the JSON request body
 
 
@@ -126,11 +126,11 @@ public class ImageService {
 
             } else {
                 System.out.println("Error: " + response.statusCode() + " - " + response.body());
-                return "Error: " + response.body();
+                return false;
             }
 
         }
-        return "Sucessfully got response";
+        return true;
     }
 
     private void saveImageJsonToRepo(String json, String imagename){

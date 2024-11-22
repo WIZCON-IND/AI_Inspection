@@ -1,18 +1,15 @@
 package com.AI_Inspection.AI_Inspection.service;
-
 import org.docx4j.dml.wordprocessingDrawing.Inline;
 import org.docx4j.jaxb.Context;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.BinaryPartAbstractImage;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
-import org.docx4j.org.apache.xpath.operations.Bool;
 import org.docx4j.wml.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,7 +26,8 @@ public class CreateDocxPages {
     @Autowired
     private CovePageService covePageService;
 
-    @Autowired AudioService audioService;
+    @Autowired
+    private  AudioService audioService;
 
     @Autowired
     private StringToJsonService stringToJsonService;

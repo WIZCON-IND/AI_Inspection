@@ -1,10 +1,13 @@
 package com.AI_Inspection.AI_Inspection.service;
 
+import com.AI_Inspection.AI_Inspection.entity.DocumentDetails;
+import com.AI_Inspection.AI_Inspection.repo.DocumentDetailsRepo;
 import org.docx4j.dml.wordprocessingDrawing.Inline;
 import org.docx4j.jaxb.Context;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.BinaryPartAbstractImage;
 import org.docx4j.wml.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
@@ -17,9 +20,13 @@ import java.time.format.DateTimeFormatter;
 @Service
 public class CovePageService {
 
+    @Autowired
+    private DocumentDetailsRepo documentDetailsRepo;
+
 
     public Tbl createCustomTable(WordprocessingMLPackage wordMLPackage) throws Exception {
 
+        DocumentDetails documentDetails = documentDetailsRepo.findTopByOrderByIdDesc();
 
         P image = createImageParagraph(wordMLPackage, "src/main/resources/static/coverPage.png", 4572000, 2708800);
         // Set alignment to the right
@@ -48,7 +55,7 @@ public class CovePageService {
         firstCell.getContent().add(createImageParagraph(wordMLPackage,"src/main/resources/static/logo.png",756000, 273600));
 
         firstRow.getContent().add(firstCell);
-        addCellToRow(firstRow, "M24074.04 - Informe del estado de la cubierta de una nave industrial en Dos Hermanas (Sevilla)","FF0000");
+        addCellToRow(firstRow, documentDetails.getDocumentName(),"FF0000");
         table.getContent().add(firstRow);
 
         Tr row2 = Context.getWmlObjectFactory().createTr();
@@ -58,7 +65,7 @@ public class CovePageService {
 
         Tr row3 = Context.getWmlObjectFactory().createTr();
         addCellToRow(row3, "", "");
-        addCellToRow(row3, "C/ Río Viejo, parcela 7-8, 41700, Dos Hermanas (Sevilla)\n", "FF0000");
+        addCellToRow(row3, documentDetails.getAddress(), "FF0000");
         table.getContent().add(row3);
 
 
