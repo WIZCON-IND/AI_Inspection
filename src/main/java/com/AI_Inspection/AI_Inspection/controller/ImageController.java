@@ -1,8 +1,13 @@
 package com.AI_Inspection.AI_Inspection.controller;
 
+import com.AI_Inspection.AI_Inspection.entity.ImageJsonString;
+import com.AI_Inspection.AI_Inspection.entity.ImageWeightage;
 import com.AI_Inspection.AI_Inspection.entity.Message;
+import com.AI_Inspection.AI_Inspection.repo.ImageJsonStringRepo;
+import com.AI_Inspection.AI_Inspection.repo.ImageWeightageRepo;
 import com.AI_Inspection.AI_Inspection.service.FinalImageJson;
 import com.AI_Inspection.AI_Inspection.service.ImageService;
+import com.AI_Inspection.AI_Inspection.service.StringToJsonService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,10 +31,19 @@ public class ImageController {
     @Autowired
     private FinalImageJson finalImageJson;
 
-    @GetMapping("/demo")
-    public ResponseEntity<Message> uploadFile(@RequestParam("file") MultipartFile[] files) throws IOException, InterruptedException {
+    @Autowired
+    private ImageJsonStringRepo imageJsonStringRepo;
 
-        boolean status = imageService.imageJson();
+    @Autowired
+    private StringToJsonService stringToJsonService;
+
+    @Autowired
+    private ImageWeightageRepo imageWeightageRepo;
+
+    @GetMapping("/demo")
+    public ResponseEntity<Message> uploadFile() throws IOException, InterruptedException {
+
+        Boolean status = imageService.imageJson();
         Message msg;
         if(status)
             msg = Message.builder().status(status).message("Successfully got response").build();
@@ -42,7 +56,20 @@ public class ImageController {
     @GetMapping("/final-json")
     public ResponseEntity<Map<String, List<String>>> finalJson() throws IOException, InterruptedException {
 
-        return new ResponseEntity<>(finalImageJson.imageJson(), HttpStatus.OK);
+//        return new ResponseEntity<>(finalImageJson.imageJson(), HttpStatus.OK);
+        return new ResponseEntity<>(imageService.getTop4ImagesPerCategory(), HttpStatus.OK);
+    }
+
+    @GetMapping("/save-weightage")
+    public ResponseEntity<String> saveWeightage() {
+
+        List<ImageJsonString> jsonString = imageJsonStringRepo.findAll();
+        for(ImageJsonString contentString: jsonString){
+            List<ImageWeightage> imageWeightageList = stringToJsonService.saveDataFromJson(contentString.getImagejson());
+            imageWeightageRepo.saveAll(imageWeightageList);
+        }
+
+        return new ResponseEntity<>("", HttpStatus.OK);
     }
 
 }

@@ -1,4 +1,5 @@
 package com.AI_Inspection.AI_Inspection.service;
+import jakarta.xml.bind.JAXBElement;
 import org.docx4j.dml.wordprocessingDrawing.Inline;
 import org.docx4j.jaxb.Context;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
@@ -21,7 +22,7 @@ public class CreateDocxPages {
 
 
     @Autowired
-    private  FinalImageJson finalImageJson;
+    private  ImageService imageService;
 
     @Autowired
     private CovePageService covePageService;
@@ -51,15 +52,17 @@ public class CreateDocxPages {
             List<String> stringList = stringToJsonService.audioString(audioString);
             System.out.println(stringList);
 
-            Map<String, List<String>> categoryImages = finalImageJson.imageJson();
+            Map<String, List<String>> categoryImages = imageService.getTop4ImagesPerCategory();
 //            Map<String, List<String>> categoryImages = new HashMap<>();
-//            categoryImages.put("SUMIDEROS", Arrays.asList("IMG_4376.jpeg", "IMG_4387.jpeg", "20240219_092647 (1).jpg", "IMG_4094.JPEG"));
+//            categoryImages.put("SUMIDEROS", Arrays.asList("IMG_4376.jpeg", "IMG_4387.jpeg", "20240219_092647.jpg", "IMG_4094.JPEG"));
 
+            mainDocumentPart.addObject(createHeading("4 INSPECCIÓN DE LA CUBIERTA", "Heading1"));
+            mainDocumentPart.addObject(createHeading("En la inspección realizada, se verifican diferentes aspectos de la cubierta según la siguiente relación:  ", "Normal"));
+            int subHeadingCounter = 0;
             for(Map.Entry<String, List<String>> entry : categoryImages.entrySet()) {
 
-                mainDocumentPart.addObject(createHeading("4\tINSPECCIÓN DE LA CUBIERTA", "Heading1"));
-                mainDocumentPart.addObject(createHeading("En la inspección realizada, se verifican diferentes aspectos de la cubierta según la siguiente relación:  ", "Normal"));
-                P paragraph = createHeading("1.1 " + entry.getKey(), "Heading2");
+                subHeadingCounter +=1;
+                P paragraph = createHeading("4."+ subHeadingCounter + " "  + entry.getKey(), "Heading2");
                 mainDocumentPart.addObject(paragraph);
 
                 Tbl descriptionTable = create1x1TableWithBorder(stringList.get(0));
@@ -162,11 +165,20 @@ public class CreateDocxPages {
 
         // Add the table row
         Tr row = Context.getWmlObjectFactory().createTr();
+        row.setTrPr(new TrPr());
         table.getContent().add(row);
 
         // Add first cell with image
         Tc cell1 = createImageCell(wordMLPackage, imageFolder+image1);
         row.getContent().add(cell1);
+
+        // Set cell height (row height property)
+        CTHeight rowHeight = Context.getWmlObjectFactory().createCTHeight();
+        rowHeight.setHRule(STHeightRule.AT_LEAST);
+        rowHeight.setVal(BigInteger.valueOf(3626)); // Height in twips (1/20th of a point)
+        JAXBElement<CTHeight> jaxbElement = Context.getWmlObjectFactory().createCTTrPrBaseTrHeight(rowHeight);
+        row.getTrPr().getCnfStyleOrDivIdOrGridBefore().add(jaxbElement);
+
 
         // Add second cell with image
         Tc cell2 = createImageCell(wordMLPackage,imageFolder+image2);
@@ -186,6 +198,19 @@ public class CreateDocxPages {
         // Add the image to the cell
         P p = createImageParagraph(wordMLPackage, imagePath, 2772000, 2088000);
         cell.getContent().add(p);
+
+        // Set vertical alignment for the table cell
+        TcPr cellProperties = cellMargin(85, 0, 112, 112);
+        CTVerticalJc verticalAlignment = Context.getWmlObjectFactory().createCTVerticalJc();
+        verticalAlignment.setVal(STVerticalJc.CENTER);
+        cellProperties.setVAlign(verticalAlignment);
+
+        // Optional: Set the width of the cell
+        TblWidth cellWidth = Context.getWmlObjectFactory().createTblWidth();
+        cellWidth.setW(BigInteger.valueOf(4804)); // Width in twips (1/20th of a point)
+        cellWidth.setType("dxa");
+        cellProperties.setTcW(cellWidth);
+        cell.setTcPr(cellProperties);
 
         return cell;
     }
@@ -209,6 +234,14 @@ public class CreateDocxPages {
         drawing.getAnchorOrInline().add(inline);
         run.getContent().add(drawing);
         paragraph.getContent().add(run);
+
+        // Center-align the paragraph
+        paragraph.setPPr(new PPr());
+        PPr paragraphProperties = Context.getWmlObjectFactory().createPPr();
+        Jc alignment = Context.getWmlObjectFactory().createJc();
+        alignment.setVal(JcEnumeration.CENTER);
+        paragraphProperties.setJc(alignment);
+        paragraph.setPPr(paragraphProperties);
 
         return paragraph;
     }
@@ -298,6 +331,38 @@ public class CreateDocxPages {
         cell.getContent().add(paragraph);
 
         return cell;
+    }
+
+    public static TcPr cellMargin(int top, int bottom, int left, int right) {
+
+        TcPr cellProperties = Context.getWmlObjectFactory().createTcPr();
+        // Add cell margins
+        TcMar cellMargins = Context.getWmlObjectFactory().createTcMar();
+        TblWidth topMargin = Context.getWmlObjectFactory().createTblWidth();
+        topMargin.setW(BigInteger.valueOf(top)); // Top margin in twips (10 points)
+        topMargin.setType("dxa");
+
+        TblWidth bottomMargin = Context.getWmlObjectFactory().createTblWidth();
+        bottomMargin.setW(BigInteger.valueOf(bottom)); // Bottom margin in twips (10 points)
+        bottomMargin.setType("dxa");
+
+        TblWidth leftMargin = Context.getWmlObjectFactory().createTblWidth();
+        leftMargin.setW(BigInteger.valueOf(left)); // Left margin in twips (10 points)
+        leftMargin.setType("dxa");
+
+        TblWidth rightMargin = Context.getWmlObjectFactory().createTblWidth();
+        rightMargin.setW(BigInteger.valueOf(right)); // Right margin in twips (10 points)
+        rightMargin.setType("dxa");
+
+        // Apply margins to the cell
+        cellMargins.setTop(topMargin);
+        cellMargins.setBottom(bottomMargin);
+        cellMargins.setLeft(leftMargin);
+        cellMargins.setRight(rightMargin);
+        cellProperties.setTcMar(cellMargins);
+
+
+        return cellProperties;
     }
 }
 

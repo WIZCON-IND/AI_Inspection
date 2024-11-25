@@ -1,7 +1,9 @@
 package com.AI_Inspection.AI_Inspection.service;
 
 import com.AI_Inspection.AI_Inspection.entity.ImageJsonString;
+import com.AI_Inspection.AI_Inspection.entity.ImageWeightage;
 import com.AI_Inspection.AI_Inspection.repo.ImageJsonStringRepo;
+import com.AI_Inspection.AI_Inspection.repo.ImageWeightageRepo;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ImageService {
@@ -32,8 +35,11 @@ public class ImageService {
     @Autowired
     private StringToJsonService stringToJsonService;
 
+    @Autowired
+    private ImageWeightageRepo imageWeightageRepo;
 
-    public  boolean imageJson() throws IOException, InterruptedException {
+
+    public  Boolean imageJson() throws IOException, InterruptedException {
         // Construct the JSON request body
 
 
@@ -66,7 +72,8 @@ public class ImageService {
                     "VENTILACIÓN / CLIMATIZACIÓN\n" +
                     "OTRAS INSTALACIONES\n" +
                     "BANCADAS\n" +
-                    "I need you to analyze my image and assign a weightage from 0-100 based on the above categories which matches the image and assign weightage to all categories. " +
+                    "I need you to analyze my image and assign a weightage from 0-100 based on the above categories which matches the image and assign weightage to all the 21 categories." +
+                    " Remember to use the exact same category name as mentioned above, don't modify the category names. " +
                     "Additionally, I want the output in json format and only the json and with the fields: \"Image Name : " + entry.getKey()  + "(Keep the image Name " +
                     "in the main object instead of repeating it), \"Category\", \"Weightage\", and \"Description\". I want the json structure as below\n" +
                     "{\n" +
@@ -126,16 +133,18 @@ public class ImageService {
 
             } else {
                 System.out.println("Error: " + response.statusCode() + " - " + response.body());
-                return false;
+                return (Boolean) false;
             }
 
         }
-        return true;
+        return (Boolean) true;
     }
 
     private void saveImageJsonToRepo(String json, String imagename){
         String contentString = stringToJsonService.getJsonString(json);
         imageJsonStringRepo.save(ImageJsonString.builder().imageName(imagename).imagejson(contentString).build());
+        List<ImageWeightage> imageWeightageList = stringToJsonService.saveDataFromJson(contentString);
+        imageWeightageRepo.saveAll(imageWeightageList);
     }
 
     public static Map<String, String> encodeImageToBase64() throws IOException {
@@ -153,5 +162,30 @@ public class ImageService {
 
         }
         return imageURLs;
+    }
+
+
+    public Map<String, List<String>> getTop4ImagesPerCategory() {
+        List<ImageWeightage> imageDataList = imageWeightageRepo.findAll();
+
+        // Group by category and select top 4 images by weightage
+        Map<String, List<String>> categoryToImagesMap =  imageDataList.stream()
+                .collect(Collectors.groupingBy(
+                        ImageWeightage::getCategory,
+                        Collectors.collectingAndThen(
+                                Collectors.toList(),
+                                list -> list.stream()
+                                        .sorted(Comparator.comparingInt(ImageWeightage::getWeightage).reversed())
+                                        .limit(4)
+                                        .map(ImageWeightage::getImageName)
+                                        .collect(Collectors.toList())
+                        )
+                ));
+
+        categoryToImagesMap.forEach((category, images) -> {
+            System.out.println("Category: " + category);
+            System.out.println("Images: " + images);
+        });
+        return categoryToImagesMap;
     }
 }

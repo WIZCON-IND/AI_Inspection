@@ -9,7 +9,7 @@ import {GenerateService} from './generate.service';
 })
 export class GenerateDocumentComponent {
 
-  validDownloadButton = true;
+  validDownloadButton = false;
 
   constructor(private generateService: GenerateService) {
   }
